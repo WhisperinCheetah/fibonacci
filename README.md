@@ -14,3 +14,5 @@ Virtually the same as the dynamic implementation except it uses uintx_t's as dat
 UNIMPLEMENTED. This implementation uses fast matrix multiplication and a cool matrix identity which states that:
 
 $$\begin{pmatrix}1 & 1\\\ 1 & 0\end{pmatrix}^2 = \begin{pmatrix}F(n+1) & F(n)\\\ F(n) & F(n-1)\end{pmatrix}$$
+
+This can be easily proven using linear algebra.
