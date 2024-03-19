@@ -1,0 +1,8 @@
+#!/bin/bash
+
+gcc -ggdb -Wall -Wextra -O0 -o fibonacci fibonacci.c
+
+if [ "$1" = "run" ]
+then
+	./fibonacci $2
+fi
