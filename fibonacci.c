@@ -6,7 +6,7 @@
 // TODO invent way to store digits in literal digit array
 // MAX fibonacci value representable by 64 bit: 93
 
-#define UINTX_T_DEFAULT 10000
+#define UINTX_T_DEFAULT 40000
 
 int max(int v1, int v2) {
   if (v1 > v2) return v1;
@@ -94,12 +94,25 @@ uintx_t* add_uintx_t(uintx_t* v1, uintx_t* v2) {
 
 uintx_t* sub_uintx_t(uintx_t* v1, uintx_t* v2) {
   int ptr;
-  int borrow = 0;
-  int swap;
+  int borrowptr;
   uintx_t* res = init_uintx_t(UINTX_T_DEFAULT);
   for (ptr = 0; ptr < max(v1->count, v2->count); ptr++) {
-    
+    if (v1->val[ptr] < v2->val[ptr]) {
+      borrowptr = ptr+1;
+      while (v1->val[borrowptr] == 0 && borrowptr < v1->count) {
+	v1->val[borrowptr] = 9;
+	borrowptr++;
+      }
+      v1->val[borrowptr] -= 1;
+      v1->val[ptr] += 10;
+    }
+
+    res->val[ptr] = v1->val[ptr] - v2->val[ptr];
   }
+
+  res->count = v2->count;
+
+  return res;
 }
 
 uintx_t* rshift_uintx_t(uintx_t* v, int amount) {
@@ -210,22 +223,18 @@ int main(int argc, char** argv) {
 
   uint64_t n = (uint64_t)atoi(argv[1]);
 
-  uintx_t* v = init_uintx_t_alt(UINTX_T_DEFAULT, 1286);
-  rshift_uintx_t(v, 2);
-  print_uintx_t(v);
-  
-  uintx_t* v2 = init_uintx_t_alt(UINTX_T_DEFAULT, 1286);
-  mask_uintx_t(v2, 2);
-  print_uintx_t(v2);
+  /* uintx_t* v = init_uintx_t_alt(UINTX_T_DEFAULT, 653); */
+  /* uintx_t* v2 = init_uintx_t_alt(UINTX_T_DEFAULT, 150); */
+  /* uintx_t* subtr = sub_uintx_t(v, v2); */
+  /* print_uintx_t(subtr); */
 
+  
   clock_t dyn_s = clock();
   uintx_t* fib_uintx = dynamic_large(n);
   clock_t dyn_e = clock();
+
   
   printf("[UINTX_T] finished F(%lu) in time=%lf\n", n, (double)(dyn_e - dyn_s) / CLOCKS_PER_SEC);
-
-  
-
   print_uintx_t(fib_uintx);
   
   return 0;
