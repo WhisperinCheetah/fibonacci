@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+
 // TODO invent way to store digits in literal digit array
 // MAX fibonacci value representable by 64 bit: 93
 
@@ -18,6 +19,11 @@ typedef struct _uintx_t {
   int count;
   uint8_t* val;
 } uintx_t;
+
+typedef struct _matrix_2x2 {
+  uint64_t m11, m12;
+  uint64_t m21, m22;
+} matrix_2x2;
 
 uintx_t* init_uintx_t(int size) {
   uintx_t* v = (uintx_t*)malloc(sizeof(uintx_t));
@@ -61,6 +67,12 @@ void destroy_uintx_t(uintx_t** v) {
   free((*v)->val);
   free(*v);
   *v = NULL;
+}
+
+void print_matrix_2x2(matrix_2x2 v) {
+  printf("[MATRIX_2X2]: \n");
+  printf("[ %lu %lu ]\n", v.m11, v.m12);
+  printf("[ %lu %lu ]\n", v.m21, v.m22);
 }
 
 void print_uintx_t(uintx_t* v) {
@@ -143,6 +155,59 @@ uintx_t* mask_uintx_t(uintx_t* v, int amount) {
   return v;
 }
 
+matrix_2x2 mul_matrix_2x2(matrix_2x2 v1, matrix_2x2 v2) {
+  uint64_t m1 = (v1.m11 + v1.m22) * (v2.m11 + v2.m22);
+  uint64_t m2 = (v1.m21 + v1.m22) * v2.m11;
+  uint64_t m3 = v1.m11 * (v2.m12 - v2.m22);
+  uint64_t m4 = v1.m22 * (v2.m21 - v2.m11);
+  uint64_t m5 = (v1.m11 + v1.m12) * v2.m22;
+  uint64_t m6 = (v1.m21 - v1.m11) * (v2.m11 + v2.m12);
+  uint64_t m7 = (v1.m12 - v1.m22) * (v2.m21 + v2.m22);
+
+  return (matrix_2x2){
+    .m11 = m1 + m4 - m5 + m7,
+    .m12 = m3 + m5,
+    .m21 = m2 + m4,
+    .m22 = m1 - m2 + m3 + m6,
+  };
+}
+
+matrix_2x2* pow_matrix_2x2_rec(matrix_2x2 v, int n, matrix_2x2** memo) {
+  matrix_2x2* res = malloc(sizeof(matrix_2x2));
+  if (n == 0) {
+    *res = (matrix_2x2){ // faster if taken from memo?
+      .m11 = 1,
+      .m12 = 0,
+      .m21 = 0,
+      .m22 = 1,
+    };
+  } else if (n == 1) {
+    *res = v;
+  } else {
+    int n1 = n / 2;
+    int n2 = n / 2 + (n%2);
+
+    if (memo[n1] == NULL) memo[n1] = pow_matrix_2x2_rec(v, n1, memo);
+    if (memo[n2] == NULL) memo[n2] = pow_matrix_2x2_rec(v, n2, memo);
+
+    *res = mul_matrix_2x2(*memo[n1], *memo[n2]);
+  }
+
+  return res;
+}
+
+matrix_2x2 pow_matrix_2x2(matrix_2x2 v, int n) {
+  matrix_2x2** memo = malloc(sizeof(matrix_2x2) * n);
+  matrix_2x2* res = pow_matrix_2x2_rec(v, n, memo);
+  matrix_2x2 res_deref = *res;
+  for (int i = 0; i < n; ++i) {
+    free(memo[i]);
+  }
+  free(memo);
+  free(res);
+  return res_deref;
+}
+
 // Mul V1 and v2, return v1 
 uintx_t* mul_uintx_t(uintx_t* v1, uintx_t* v2) {
   int max_num_length = max(v1->count, v2->count);
@@ -165,8 +230,6 @@ uintx_t* mul_uintx_t(uintx_t* v1, uintx_t* v2) {
   destroy_uintx_t(&d);
   destroy_uintx_t(&sum_a_b);
   destroy_uintx_t(&sum_c_d);
-
-  
   
   return v1;
 }
@@ -216,8 +279,8 @@ uint64_t recursive(uint64_t n) {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    printf("No amount provided");
-    printf("usage: %s <nth>", argv[0]);
+    printf("No amount provided\n");
+    printf("usage: %s <nth>-n", argv[0]);
     return 1;
   }
 
@@ -227,6 +290,26 @@ int main(int argc, char** argv) {
   /* uintx_t* v2 = init_uintx_t_alt(UINTX_T_DEFAULT, 150); */
   /* uintx_t* subtr = sub_uintx_t(v, v2); */
   /* print_uintx_t(subtr); */
+
+
+  matrix_2x2 v1 = (matrix_2x2){
+    .m11 = 1,
+    .m12 = 1,
+    .m21 = 1,
+    .m22 = 0,
+  };
+
+  clock_t s = clock();
+  matrix_2x2 res = pow_matrix_2x2(v1, n);
+  clock_t e = clock(); 
+  print_matrix_2x2(res);
+  printf("[MATRIX_2X2] Finished F(%lu) in %lfs\n", n, (double)(e - s) / CLOCKS_PER_SEC);
+  
+  clock_t s_dyn = clock();
+  uint64_t res_dyn = dynamic(n);
+  clock_t e_dyn = clock(); 
+  printf("[DYNAMIC] Result: %lu\n", res_dyn);
+  printf("[DYNAMIC] Finished F(%lu) in %lfs\n", n, (double)(e_dyn - s_dyn) / CLOCKS_PER_SEC);
 
   
   clock_t dyn_s = clock();
